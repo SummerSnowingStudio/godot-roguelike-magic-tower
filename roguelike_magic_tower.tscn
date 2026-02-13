@@ -1,8 +1,9 @@
-[gd_scene load_steps=9 format=4 uid="uid://c5h1a7ys8sbpa"]
+[gd_scene format=4 uid="uid://c5h1a7ys8sbpa"]
 
 [ext_resource type="Script" uid="uid://dkha8ps1jx8y4" path="res://roguelike_magic_tower.gd" id="1_waf45"]
 [ext_resource type="Texture2D" uid="uid://uehiaroqtnlr" path="res://assets/urizen_onebit_tileset__v2d0.png" id="2_bp7ex"]
 [ext_resource type="Texture2D" uid="uid://hdd201fpircp" path="res://assets/player.png" id="3_alwmr"]
+[ext_resource type="PackedScene" uid="uid://buh8po27ml0vj" path="res://story_maps.tscn" id="4_bp7ex"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_nv6jo"]
 texture = ExtResource("2_bp7ex")
@@ -12071,33 +12072,33 @@ region = Rect2(521, 79, 12, 12)
 atlas = ExtResource("2_bp7ex")
 region = Rect2(391, 53, 12, 12)
 
-[node name="RoguelikeMagicTower" type="Node2D"]
+[node name="RoguelikeMagicTower" type="Node2D" unique_id=1505185205]
 texture_filter = 1
 script = ExtResource("1_waf45")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="ColorRect" type="ColorRect" parent="." unique_id=562452081]
 offset_right = 864.0
 offset_bottom = 576.0
 color = Color(0, 0, 0, 1)
 
-[node name="TileMapLayer" type="TileMapLayer" parent="."]
+[node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=1864562826]
 position = Vector2(48, 48)
 scale = Vector2(4, 4)
 tile_map_data = PackedByteArray("AAAAAAAAAAAIAAMAAAABAAAAAAAIAAMAAAACAAAAAAAIAAMAAAADAAAAAAAIAAMAAAAEAAAAAAAIAAMAAAAAAAEAAAAIAAMAAAAAAAIAAAAIAAMAAAAAAAMAAAAIAAMAAAAAAAQAAAAIAAMAAAAFAAAAAAAIAAMAAAAGAAAAAAAIAAMAAAAHAAAAAAAIAAMAAAAIAAAAAAAIAAMAAAAJAAAAAAAIAAMAAAAAAAUAAAAIAAMAAAAAAAYAAAAIAAMAAAAAAAcAAAAIAAMAAAAAAAgAAAAIAAMAAAAAAAkAAAAIAAMAAAAJAAEAAAAIAAMAAAAJAAIAAAAIAAMAAAAJAAMAAAAIAAMAAAAJAAQAAAAIAAMAAAAJAAUAAAAIAAMAAAAJAAYAAAAIAAMAAAAJAAcAAAAIAAMAAAAJAAgAAAAIAAMAAAAJAAkAAAAIAAMAAAAIAAkAAAASAAMAAAAHAAkAAAAIAAMAAAAGAAkAAAAIAAMAAAAEAAkAAAAIAAMAAAADAAkAAAAIAAMAAAABAAkAAAAIAAMAAAACAAkAAAAIAAMAAAAFAAkAAAAIAAMAAAAKAAAAAACRAAQAAAAKAAEAAACRAAQAAAAKAAIAAACRAAQAAAALAAAAAACRAAQAAAAMAAAAAABAACEAAAANAAAAAACRAAQAAAAKAAMAAACRAAQAAAAKAAQAAACRAAQAAAAKAAUAAACRAAQAAAAKAAYAAACRAAQAAAAKAAcAAACRAAQAAAAKAAgAAACRAAQAAAAKAAkAAACRAAQAAAALAAEAAABBACEAAAAMAAIAAAAaAB4AAAAMAAMAAABdACoAAAAMAAEAAAAXAAcAAAAMAAQAAABJACIAAAAMAAcAAABJACIAAAALAAcAAABWACIAAAAMAAUAAABdACoAAAAMAAYAAABJACIAAAALAAUAAABpACoAAAALAAMAAAAaAB4AAAALAAIAAACZAAEAAAALAAQAAABoACoAAAALAAkAAABJACIAAAAMAAkAAABJACIAAAAMAAgAAABJACIAAAAOAAAAAABAACEAAAAPAAAAAABJACIAAAAPAAkAAABJACIAAAAOAAkAAABJACIAAAANAAkAAABJACIAAAAOAAEAAAAgAAUAAAANAAEAAACRAAQAAAAPAAEAAAAVAAgAAAAPAAIAAAA/ACEAAAAOAAIAAAA/ACEAAAANAAIAAAA/ACEAAAANAAMAAAA/ACEAAAAOAAMAAABdACoAAAAPAAMAAAA/ACEAAAAPAAQAAAA/ACEAAAAOAAQAAAA/ACEAAAANAAQAAAA/ACEAAAANAAUAAAA/ACEAAAAPAAYAAAA/ACEAAAAOAAUAAABdACoAAAAPAAUAAABkACsAAAAOAAYAAABkACsAAAANAAYAAABkACsAAAANAAcAAABkACsAAAAOAAcAAABkACsAAAAPAAgAAABkACsAAAAPAAcAAABkACsAAAAOAAgAAABkACsAAAANAAgAAABkACsAAAALAAgAAAAsABMAAAALAAYAAABqACoAAAADAAgAAAAAAAMAAAADAAcAAAAAAAMAAAADAAYAAAAAAAMAAAADAAUAAAAAAAMAAAAFAAUAAAAAAAMAAAAFAAYAAAAAAAMAAAAFAAcAAAAAAAMAAAAFAAgAAAAAAAMAAAAEAAgAAAAnAAYAAAAEAAYAAABqACoAAAAEAAcAAABpACoAAAAEAAUAAABoACoAAAAEAAQAAABpACoAAAA=")
 tile_set = SubResource("TileSet_k4fxd")
 
-[node name="Player" type="Sprite2D" parent="TileMapLayer"]
+[node name="Player" type="Sprite2D" parent="TileMapLayer" unique_id=1855063841]
 texture = ExtResource("3_alwmr")
 centered = false
 
-[node name="Control" type="Control" parent="TileMapLayer"]
+[node name="Control" type="Control" parent="TileMapLayer" unique_id=2007592321]
 texture_filter = 1
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="Label" type="Label" parent="TileMapLayer/Control"]
+[node name="Label" type="Label" parent="TileMapLayer/Control" unique_id=40219484]
 texture_filter = 1
 layout_mode = 0
 offset_left = 147.5
@@ -12107,7 +12108,7 @@ offset_bottom = 70.5
 theme_override_font_sizes/font_size = 9
 text = "5     1    0"
 
-[node name="Label5" type="Label" parent="TileMapLayer/Control"]
+[node name="Label5" type="Label" parent="TileMapLayer/Control" unique_id=65460233]
 texture_filter = 1
 layout_mode = 0
 offset_left = 147.0
@@ -12117,7 +12118,7 @@ offset_bottom = 47.5
 theme_override_font_sizes/font_size = 9
 text = "10   1    0"
 
-[node name="Label2" type="Label" parent="TileMapLayer/Control"]
+[node name="Label2" type="Label" parent="TileMapLayer/Control" unique_id=1211273167]
 texture_filter = 1
 layout_mode = 0
 offset_left = 147.0
@@ -12127,7 +12128,7 @@ offset_bottom = 81.5
 theme_override_font_sizes/font_size = 9
 text = "10   2    1"
 
-[node name="Label3" type="Label" parent="TileMapLayer/Control"]
+[node name="Label3" type="Label" parent="TileMapLayer/Control" unique_id=1513151260]
 texture_filter = 1
 layout_mode = 0
 offset_left = 147.0
@@ -12137,7 +12138,7 @@ offset_bottom = 95.0
 theme_override_font_sizes/font_size = 9
 text = "10   5    2"
 
-[node name="Label4" type="Label" parent="TileMapLayer/Control"]
+[node name="Label4" type="Label" parent="TileMapLayer/Control" unique_id=190009486]
 texture_filter = 1
 layout_mode = 0
 offset_left = 147.0
@@ -12147,7 +12148,7 @@ offset_bottom = 107.0
 theme_override_font_sizes/font_size = 9
 text = "99   9    9"
 
-[node name="TextureRect3" type="TextureRect" parent="TileMapLayer/Control"]
+[node name="TextureRect3" type="TextureRect" parent="TileMapLayer/Control" unique_id=2075539081]
 layout_mode = 0
 offset_left = 177.0
 offset_top = 12.0
@@ -12155,7 +12156,7 @@ offset_right = 189.0
 offset_bottom = 24.0
 texture = SubResource("AtlasTexture_k4fxd")
 
-[node name="TextureRect2" type="TextureRect" parent="TileMapLayer/Control"]
+[node name="TextureRect2" type="TextureRect" parent="TileMapLayer/Control" unique_id=2055115640]
 layout_mode = 0
 offset_left = 162.0
 offset_top = 12.0
@@ -12163,10 +12164,13 @@ offset_right = 174.0
 offset_bottom = 24.0
 texture = SubResource("AtlasTexture_nv6jo")
 
-[node name="TextureRect" type="TextureRect" parent="TileMapLayer/Control"]
+[node name="TextureRect" type="TextureRect" parent="TileMapLayer/Control" unique_id=2056456687]
 layout_mode = 0
 offset_left = 147.25
 offset_top = 12.0
 offset_right = 159.25
 offset_bottom = 24.0
 texture = SubResource("AtlasTexture_vgvj8")
+
+[node name="StoryMaps" parent="." unique_id=1755604280 instance=ExtResource("4_bp7ex")]
+position = Vector2(-300, -129)
