@@ -19,5 +19,5 @@ A simple rogue-like magic tower game developed using Godot.
 * Assets:
   - [coming soon] *princess.png*, *princess1.png*: CC-BY-SA-4.0 (Way)
   - [coming soon] *fragment1.png*: CC-BY-SA-4.0 (Way)
-  - Music (*.ogg*): [https://tallbeard.itch.io/three-red-hearts-prepare-to-dev]
+  - Music (*.ogg*): <https://tallbeard.itch.io/three-red-hearts-prepare-to-dev>
   - Others: CC0
