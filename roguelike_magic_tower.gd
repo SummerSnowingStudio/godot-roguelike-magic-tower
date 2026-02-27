@@ -1,60 +1,100 @@
 extends Node2D
 
-# Roglike Magic Tower - single-file core logic
-# - Map is always 9x9 playable cells surrounded by a 1-cell outer wall -> 11x11 total
-# - Each cell is visually represented at CELL x CELL pixels (default 12x12)
-# - This script generates walls, monsters, items, player start and stairs
-# - Stairs may be placed on a monster or item; in that case they are hidden until
-#   the monster is defeated or the item picked up. Stairs never spawn on obstacles.
-# - Assets are optional; the script draws a simple colored fallback (so it runs
-#   without any imported sprites). To use textures, set the texture paths below.
-
 const CELL := 12
 const INNER := 8
 const OUTER := INNER + 2 # 11
 const MAP_SIZE := OUTER
 
 const MONSTER_TYPES := 3
-const MONSTER_ANIM_INTERVAL := 0.45
-
-var _monster_anim_phase := 0 # 0 or 1
-var _monster_anim_timer := 0.0
+const MONSTER_RATIO_BY_FLOOR = [
+	[],
+	[70, 30, 0],
+	[60, 40, 0],
+	[50, 50, 0],
+	[50, 40, 10],
+	[30, 50, 20],
+	[20, 60, 20],
+	[30, 40, 30],
+	[20, 50, 30],
+	[20, 40, 40],
+	[0, 50, 50]
+]
 
 enum CellKind {FLOOR, WALL, MONSTER, ITEM, STAIRS}
 
 var map = [] # 2D array [x][y] -> dictionary describing the cell
-var map_level = 0
+
+var current_floor = 1
 
 var player = {
 	"pos": Vector2(),
-	"hp": 100,
-	"atk": 10,
-	"def": 3
+	"hp": 40,
+	"atk": 3,
+	"def": 1
 }
+
+var monster_s = {
+	"type": "s",
+	"hp": 6,
+	"atk": 2,
+	"def": 0
+}
+
+var monster_m = {
+	"type": "m",
+	"hp": 8,
+	"atk": 3,
+	"def": 1
+}
+
+var monster_l = {
+	'type': 'l',
+	"hp": 10,
+	"atk": 4,
+	"def": 2
+}
+
+var monster_dragon = {
+	"type": "dragon",
+	"hp": 20,
+	"atk": 8,
+	"def": 4
+}
+
+const RARE_DROP_RATE := 0.07
 
 var rng := RandomNumberGenerator.new()
 
-@onready var _tilemap : TileMapLayer = $TileMapLayer
-@onready var _player_sprite: Sprite2D = $TileMapLayer/Player
+@onready var _tilemap : TileMapLayer = $Map
+@onready var _player_sprite: Sprite2D = $Map/Player
 
 func _ready():
 	rng.randomize()
-	_init_map()
-	# render initial map into TileMap
-	call_deferred("_render_tilemap")
+	load_map(current_floor)
+	render_tilemap()
 
-	# Print a small help so the user knows controls
-	print("Magic Tower: use arrow keys to move. Fight monsters by moving into them. Pick items by moving onto them. Stairs appear after killing a monster or picking an item if hidden.")
+func _process(_delta: float) -> void:
+	$Control/Hp.text = str(player['hp'])
+	$Control/Atk.text = str(player['atk'])
+	$Control/Def.text = str(player['def'])
 
-func _process(delta: float) -> void:
-	# advance monster animation timer; flip global phase every interval
-	_monster_anim_timer += delta
-	if _monster_anim_timer >= MONSTER_ANIM_INTERVAL:
-		_monster_anim_timer = 0.0
-		_monster_anim_phase = 1 - _monster_anim_phase
-		call_deferred("_render_tilemap")
+func _input(event):
+	var dir = Vector2()
+	# handle arrow keys for movement
+	if event.is_action_pressed("move_up"):
+		dir = Vector2(0, -1)
+	elif event.is_action_pressed("move_down"):
+		dir = Vector2(0, 1)
+	elif event.is_action_pressed("move_left"):
+		dir = Vector2(-1, 0)
+	elif event.is_action_pressed("move_right"):
+		dir = Vector2(1, 0)
 
-func _render_tilemap() -> void:
+	if dir != Vector2():
+		_try_move(dir)
+		render_tilemap()
+
+func render_tilemap() -> void:
 	if _tilemap == null:
 		return
 	for x in range(MAP_SIZE):
@@ -69,7 +109,7 @@ func _render_tilemap() -> void:
 				CellKind.MONSTER:
 					var mtype = 0
 					if cell["variant"] and cell["variant"].has("type"):
-						mtype = int(cell["variant"]["type"])
+						mtype = 0 if cell["variant"]["type"] == "s" else 1 if cell["variant"]["type"] == "m" else 2
 					mtype = clamp(mtype, 0, MONSTER_TYPES - 1)
 					coords = Vector2i(104 + mtype, 42)
 				CellKind.ITEM:
@@ -83,108 +123,93 @@ func _render_tilemap() -> void:
 						coords = Vector2i(30,4)
 				CellKind.STAIRS:
 					coords = Vector2i(24,0)
-			if y < 9 || map_level > 1:
+			if y < 9 || current_floor > 1:
 				_tilemap.set_cell(Vector2i(x, y), 0, coords)
 	var p = player["pos"]
 	_player_sprite.position = Vector2(p.x * CELL + 1, p.y * CELL + 1)
 
-func _init_map():
+func load_map(floor):
 	# initialize blank map
+	var map_start = Vector2i(0 if rng.randf() > 0.5 else 11, (floor - 1)*11)
 	map = []
-	map_level += 1
+	var stair_placed = false
 	for x in range(MAP_SIZE):
 		map.append([])
 		for y in range(MAP_SIZE):
-			var cell = {
+			# Copy tilemaplayer's cell at (x, y) to map
+			var cell_dict = {
 				"kind": CellKind.FLOOR,
-				"variant": null, # monster/item data
+				"variant": null,
 				"stairs_hidden": false
 			}
-			# outer walls
-			if x == 0 or y == 0 or x == MAP_SIZE - 1 or y == MAP_SIZE - 1:
-				cell["kind"] = CellKind.WALL
-			map[x].append(cell)
-
-	# Randomly place inner obstacles, monsters, and items
-	# Probabilities can be tuned
-	var prob_wall = 0.12
-	var prob_monster = 0.10
-	var prob_item = 0.04
-
-	for x in range(1, MAP_SIZE - 1):
-		for y in range(1, MAP_SIZE - 1):
-			var r = rng.randf()
-			if r < prob_wall:
-				map[x][y]["kind"] = CellKind.WALL
-			else:
-				# floor by default; maybe place monster or item
-				var r2 = rng.randf()
-				if r2 < prob_monster:
-					map[x][y]["kind"] = CellKind.MONSTER
-					# simple monster stats
-					var mtype = rng.randi_range(0, MONSTER_TYPES - 1)
-					map[x][y]["variant"] = {
-						"hp": 6 + mtype * 2,
-						"atk": 2 + mtype,
-						"def": clamp(mtype - 1, 0, 1),
-						"type": mtype
-					}
-				elif r2 < prob_monster + prob_item:
-					map[x][y]["kind"] = CellKind.ITEM
-					var t = rng.randi_range(0, 2)
-					match t:
-						0:
-							map[x][y]["variant"] = {"type": "atk", "value": 1}
-						1:
-							map[x][y]["variant"] = {"type": "def", "value": 1}
-						2:
-							map[x][y]["variant"] = {"type": "hp", "value": 5}
-
-	# Place stairs: choose any non-wall cell. If the chosen cell currently has a
-	# monster or item, mark the stairs as hidden until that content is cleared.
-	var stairs_placed := false
-	var attempts = 0
-	while not stairs_placed:
-		var sx = rng.randi_range(1, MAP_SIZE - 2)
-		var sy = rng.randi_range(1, MAP_SIZE - 2)
-		var c = map[sx][sy]
-		if c["kind"] == CellKind.WALL:
-			continue
-		if c["kind"] == CellKind.MONSTER or c["kind"] == CellKind.ITEM:
-			c["stairs_hidden"] = true
-			# keep the cell kind as-is (monster/item) until cleared
-		else:
-			if attempts < 4:
-				attempts += 1
+			var tile_coords = $StoryMaps.get_cell_atlas_coords(map_start + Vector2i(x, y))
+			# You can customize mapping from tile_coords to CellKind here
+			if tile_coords == Vector2i(8,3):
+				cell_dict["kind"] = CellKind.WALL
+			elif tile_coords == Vector2i(22,0):
+				cell_dict["kind"] = CellKind.FLOOR
+			elif tile_coords == Vector2i(24,0):
+				cell_dict["kind"] = CellKind.STAIRS
+				stair_placed = true
+			elif tile_coords == Vector2i(196,1):
+				cell_dict["kind"] = CellKind.FLOOR
+				player['pos'] = Vector2(x, y) # set player start pos
+			elif tile_coords == Vector2i(40,6):
+				cell_dict["kind"] = CellKind.ITEM
+				cell_dict["variant"] = {"type": "atk", "value": 1}
+			elif tile_coords == Vector2i(40,12):
+				cell_dict["kind"] = CellKind.ITEM
+				cell_dict["variant"] = {"type": "def", "value": 1}
+			elif tile_coords == Vector2i(30,4):
+				cell_dict["kind"] = CellKind.ITEM
+				cell_dict["variant"] = {"type": "hp", "value": 5}
+			elif tile_coords.x >= 104 and tile_coords.y == 42:
+				cell_dict["kind"] = CellKind.MONSTER
+				cell_dict["variant"] = {"type": tile_coords.x - 104, "hp": 6, "atk": 2, "def": 0}
+				var r = rng.randf() * 100
+				var m
+				var ratio = MONSTER_RATIO_BY_FLOOR[floor]
+				if r < ratio[0]:
+					m = monster_s
+				elif r < ratio[0] + ratio[1]:
+					m = monster_m
+				else:
+					m = monster_l
+				cell_dict.kind = CellKind.MONSTER
+				cell_dict.variant = {
+					"hp": m.hp,
+					"atk": m.atk,
+					"def": m.def,
+					"type": m.type,
+					"rare_drop": (m.type == "l" and rng.randf() < RARE_DROP_RATE)
+				}
+			map[x].append(cell_dict)
+	if !stair_placed:
+		var px = int(player["pos"].x)
+		var py = int(player["pos"].y)
+		var placed = false
+		var attempts = 0
+		while !placed and attempts < 500:
+			attempts += 1
+			var sx = rng.randi_range(1, MAP_SIZE - 2)
+			var sy = rng.randi_range(1, MAP_SIZE - 2)
+			if Vector2i(sx, sy).distance_to(Vector2i(px, py)) < 3:
 				continue
-			c["kind"] = CellKind.STAIRS
-		stairs_placed = true
-
-	# Place player start on a random floor cell (not wall, not monster/item/stairs hidden)
-	var placed := false
-	while not placed:
-		var px = rng.randi_range(1, MAP_SIZE - 2)
-		var py = rng.randi_range(1, MAP_SIZE - 2)
-		var pc = map[px][py]
-		if pc["kind"] == CellKind.FLOOR:
-			player["pos"] = Vector2(px, py)
-			placed = true
-
-func _unhandled_input(event):
-	# handle arrow keys for movement
-	if event is InputEventKey and event.pressed and not event.echo:
-		var dir = Vector2()
-		if event.keycode == KEY_UP:
-			dir = Vector2(0, -1)
-		elif event.keycode == KEY_DOWN:
-			dir = Vector2(0, 1)
-		elif event.keycode == KEY_LEFT:
-			dir = Vector2(-1, 0)
-		elif event.keycode == KEY_RIGHT:
-			dir = Vector2(1, 0)
-
-		if dir != Vector2():
-			_try_move(dir)
+			var free = 0
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				if map[sx + d.x][sy + d.y].kind != CellKind.WALL:
+					free += 1
+			if free < 3:
+				continue
+			var c = map[sx][sy]
+			if c.kind == CellKind.WALL:
+				continue
+			if c.kind == CellKind.FLOOR:
+				c.kind = CellKind.STAIRS
+				placed = true
+			else:
+				c.stairs_hidden = true
+				placed = true
 
 func _try_move(dir: Vector2) -> void:
 	var nx = int(player["pos"].x + dir.x)
@@ -204,8 +229,9 @@ func _try_move(dir: Vector2) -> void:
 	elif target["kind"] == CellKind.STAIRS:
 		# step on stairs (level up placeholder)
 		player["pos"] = Vector2(nx, ny)
-		_init_map()
-		_render_tilemap()
+		current_floor += 1
+		load_map(current_floor)
+		render_tilemap()
 	else:
 		# floor or previously cleared cell
 		player["pos"] = Vector2(nx, ny)
@@ -265,13 +291,10 @@ func _pickup_item(ix: int, iy: int) -> void:
 	match t:
 		"atk":
 			player["atk"] += v
-			print("Picked up ATK +%d" % v)
 		"def":
 			player["def"] += v
-			print("Picked up DEF +%d" % v)
 		"hp":
 			player["hp"] += v
-			print("Picked up HP +%d" % v)
 
 	# remove item
 	map[ix][iy]["kind"] = CellKind.FLOOR
