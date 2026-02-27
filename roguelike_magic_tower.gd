@@ -67,6 +67,7 @@ var rng := RandomNumberGenerator.new()
 
 @onready var _tilemap : TileMapLayer = $Map
 @onready var _player_sprite: Sprite2D = $Map/Player
+@onready var player_sound: AudioStreamPlayer2D = $Map/Player/Sound
 
 func _ready():
 	rng.randomize()
@@ -130,7 +131,7 @@ func render_tilemap() -> void:
 
 func load_map(floor):
 	# initialize blank map
-	var map_start = Vector2i(0 if rng.randf() > 0.5 else 11, (floor - 1)*11)
+	var map_start = Vector2i(0 if floor >10 || rng.randf() < 0.5 else 11, (floor - 1)*11)
 	map = []
 	var stair_placed = false
 	for x in range(MAP_SIZE):
@@ -273,17 +274,17 @@ func _combat(mx: int, my: int) -> void:
 	# if stairs were hidden here, reveal them
 	if map[mx][my]["stairs_hidden"]:
 		map[mx][my]["kind"] = CellKind.STAIRS
-		print("Stairs revealed!")
+		stairs_revealed()
 
 	# move player into the cell
 	player["pos"] = Vector2(mx, my)
-	call_deferred("_render_tilemap")
+	call_deferred("render_tilemap")
 
 func _pickup_item(ix: int, iy: int) -> void:
 	var ide = map[ix][iy]["variant"]
 	if ide == null:
 		map[ix][iy]["kind"] = CellKind.FLOOR
-		call_deferred("_render_tilemap")
+		render_tilemap()
 		return
 
 	var t = ide.get("type")
@@ -299,13 +300,18 @@ func _pickup_item(ix: int, iy: int) -> void:
 	# remove item
 	map[ix][iy]["kind"] = CellKind.FLOOR
 	map[ix][iy]["variant"] = null
+	player_sound.stream = preload("res://assets/Fruit collect 1.wav")
+	player_sound.play()
 
 	# reveal stairs if hidden here
 	if map[ix][iy]["stairs_hidden"]:
 		map[ix][iy]["stairs_hidden"] = false
 		map[ix][iy]["kind"] = CellKind.STAIRS
-		print("Stairs revealed!")
+		stairs_revealed()
 
 	# move player into the cell
 	player["pos"] = Vector2(ix, iy)
-	call_deferred("_render_tilemap")
+	render_tilemap()
+
+func stairs_revealed():
+	$Map/Player/StairRevealedSoundplayer_sound.play()
